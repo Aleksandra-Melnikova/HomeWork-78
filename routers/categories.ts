@@ -6,7 +6,7 @@ const categoriesRouter = express.Router();
 const routerName = 'categories';
 
 categoriesRouter.get('/', async (req, res) => {
-    const categories = await fileDb.getItems(routerName);
+    const categories = await fileDb.getItems(routerName) as Categories[];
     console.log(categories);
     const result = categories.map(category => {
         return{

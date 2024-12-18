@@ -6,7 +6,7 @@ const placesRouter = express.Router();
 const routerName = 'places';
 
 placesRouter.get('/', async (req, res) => {
-    const places:Places[] = await fileDb.getItems(routerName);
+    const places = await fileDb.getItems(routerName) as Places[];
     const result = places.map(place => {
         return{
             id: place.id,

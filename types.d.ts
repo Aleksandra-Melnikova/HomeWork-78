@@ -19,9 +19,9 @@ export interface Items{
     id_category: string;
     id_place: string;
     title: string;
-    description: string;
-    image_url: string | null;
-    date: string;
+    description: string | null;
+    image: string | null;
+    date: string | null;
 }
 
 export type ItemWithoutId = Omit<Items, 'id'>

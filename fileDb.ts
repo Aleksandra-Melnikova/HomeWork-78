@@ -4,10 +4,9 @@ import crypto from "crypto";
 
 
 const fileName = './db.json';
-let data: {'categories':Categories[],'places':Places[], 'items': Items[]} = {
-    'categories':[],
-    'places':[],
-    'items':[]
+let data: {'categories':Categories[],'places':Places[], 'items': Items[]} = {categories:[],
+    places:[],
+    items:[]
 };
 
 const fileDb = {
@@ -32,13 +31,13 @@ const fileDb = {
     async addItem(item: CategoriesWithoutId | PlacesWithoutId | ItemWithoutId, routerName:'places'|'categories' |'items') {
         const id = crypto.randomUUID();
         if(routerName==='categories'){
-            const category = {id, ...item};
+            const category = {id, ...item as CategoriesWithoutId};
             const categories = data.categories;
             categories.push(category);
             await this.save();
             return category;
         } else if(routerName==='places'){
-            const place = {id, ...item};
+            const place = {id, ...item as PlacesWithoutId};
             const places = data.places;
             places.push(place);
             await this.save();

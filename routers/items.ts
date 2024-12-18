@@ -1,29 +1,35 @@
 import express from "express";
 import fileDb from "../fileDb";
-import {Items, ItemWithoutId, Places, PlacesWithoutId} from "../types";
+import {Items, ItemWithoutId} from "../types";
+import {imagesUpload} from "../multer";
 
 const itemsRouter = express.Router();
 const routerName = 'items';
 
 itemsRouter.get('/', async (req, res) => {
-    const items:Items[] = await fileDb.getItems(routerName) as Items[];
+    const items = await fileDb.getItems(routerName) as Items[];
     const result = items.map(item => {
         return{
             id: item.id,
-            name:item.title
+            name:item.title,
+            id_category: item.id_category,
+            id_place: item.id_place,
         }
     })
     res.send(result);
 });
 
 itemsRouter.get('/:id', async (req, res) => {
-    const items = await fileDb.getItems(routerName); // [{}, {}, {}, {}]
+    const items = await fileDb.getItems(routerName);
     const itemFindById = items.find((item) => item.id === req.params.id);
-    res.send(itemFindById);
+    if(itemFindById ){
+        res.send(itemFindById);
+    }
+    else (res.status(400).send({error:"Incorrect id"}));
 });
 
 
-itemsRouter.post('/', async (req, res) => {
+itemsRouter.post('/',imagesUpload.single('image'), async (req, res) => {
     if(!req.body.title || ! req.body.id_category || ! req.body.id_place) {
         res.status(400).send({error:"please send title, category and place"});
         return
@@ -33,20 +39,21 @@ itemsRouter.post('/', async (req, res) => {
         id_place: req.body.id_place,
         title: req.body.title,
         description: req.body.description,
-        image_url:'',
+        image:req.file ?'images' + req.file.filename : null,
         date: req.body.date,
     };
 
     const savedItems = await fileDb.addItem(item,routerName);
     res.send(savedItems);
 });
+
 itemsRouter.delete('/:id', async (req, res) => {
     const items = await fileDb.getItems(routerName);//проверить на связанность данных//
     const itemsFindById = items .find((item) => item.id === req.params.id);
     if(itemsFindById) {
         const placesNew = await fileDb.deleteItem(itemsFindById,routerName);
         res.send(placesNew);}
-    else  res.status(400).send({error:"Id is incorrect"});//нужен ли ответ//
+    else  res.status(400).send({error:"Incorrect id"});//нужен ли ответ//
 });
 
 // categoriesRouter.put('/:id', async (req, res) => {
