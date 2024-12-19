@@ -1,65 +1,115 @@
 import express from "express";
-import fileDb from "../fileDb";
 import {Categories, CategoriesWithoutId} from "../types";
+import mySqlDb from "../mySqlDb";
+import {ResultSetHeader} from "mysql2";
 
 const categoriesRouter = express.Router();
-const routerName = 'categories';
 
-categoriesRouter.get('/', async (req, res) => {
-    const categories = await fileDb.getItems(routerName) as Categories[];
-    console.log(categories);
-    const result = categories.map(category => {
-        return{
-            id: category.id,
-            name:category.title
-        }
-    })
-    res.send(result);
+categoriesRouter.get('/', async (req, res, next) => {
+    try {
+        const connection = await mySqlDb.getConnection();
+        const [result] = await connection.query('SELECT id, title FROM categories');
+        const categories = result as Categories[];
+        res.send(categories);
+    }
+    catch (e){
+        next(e);
+    }
 });
 
-categoriesRouter.get('/:id', async (req, res) => {
-    const categories = await fileDb.getItems(routerName); // [{}, {}, {}, {}]
-    const categoryFindById = categories.find((category) => category.id === req.params.id);
-    res.send(categoryFindById);
+categoriesRouter.get('/:id', async (req, res,next) => {
+  const id = req.params.id;
+  if (!req.params.id) {
+      res.status(404).send({error:"Not found"});
+  }
+  try {
+      const connection = await mySqlDb.getConnection();
+      const [result]= await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
+      const categories = result as Categories[];
+      if (categories.length === 0 ){
+          res.status(400).send({error:"Category not found"});
+      } else {
+          res.send(categories[0]);
+      }
+  }
+  catch (e){
+      next(e);
+  }
 });
 
-
-categoriesRouter.post('/', async (req, res) => {
+categoriesRouter.post('/', async (req, res,next) => {
     if(!req.body.title) {
-        res.status(400).send({error:"please send title"});
+        res.status(400).send({error:"Please send title"});
         return
     }
-   const category: CategoriesWithoutId = {
-     title: req.body.title,
-     description: req.body.description,
-   };
+    const category: CategoriesWithoutId = {
+        title: req.body.title,
+        description: req.body.description,
+    };
+    try {
+        const connection = await mySqlDb.getConnection();
+        const [result]= await connection.query('INSERT INTO categories (title,description) VALUES (?, ?)',
+            [ category.title,category.description]);
+        const resultHeader = result as ResultSetHeader;
+        const [resultOneCategory]= await connection.query('SELECT * FROM categories WHERE id = ?', [resultHeader.insertId]);
+        const oneCategory = resultOneCategory as Categories[];
+        console.log(oneCategory);
+        if (oneCategory.length === 0 ){
+            res.status(400).send({error:"Category not found"});
+        } else {
+            res.send(oneCategory[0]);
+        }
+    }
+    catch (e){
+        next(e);
+    }
 
-   const savedCategories = await fileDb.addItem(category,routerName);
-   res.send(savedCategories);
 });
-categoriesRouter.delete('/:id', async (req, res) => {
-    const categories = await fileDb.getItems(routerName);//проверить на связанность данных//
-    const categoryFindById = categories.find((category) => category.id === req.params.id);
-    if(categoryFindById) {
-        const categoriesNew = await fileDb.deleteItem(categoryFindById,routerName);
-        res.send(categoriesNew);}//нужен ли ответ//
+categoriesRouter.delete('/:id', async (req, res,next) => {
+    const id = req.params.id;
+    if (!req.params.id) {
+        res.status(404).send({error:"Not found"});
+    }
+    try {
+        const connection = await mySqlDb.getConnection();
+        await connection.query('DELETE FROM categories WHERE id = ?', [id]);
+        const [result] = await connection.query('SELECT id, title FROM categories');
+        const categories = result as Categories[];
+        res.send(categories);
+    }
+    catch (e){
+        next(e);
+    }
 });
 
-// categoriesRouter.put('/:id', async (req, res) => {
-//     const categories = await fileDb.getItems();
-//     const index = categories.findIndex((category) => category.id === req.params.id);
-//     console.log(index);
-//     console.log(req.body.title)
-//         const item:Categories ={
-//             id:categories[index].id,
-//             title:req.body.title,
-//             description:req.body.description,}
-//
-//         console.log(item);
-//         // const categoriesNew = await fileDb.putItem(item,index);
-//         // console.log(categoriesNew);
-//         // res.send(categoriesNew);
-//
-// });
+categoriesRouter.put('/:id', async (req, res,next) => {
+    const id = req.params.id;
+    if (!req.params.id) {
+        res.status(404).send({error:"Not found"});
+    }
+    try {
+        const connection = await mySqlDb.getConnection();
+        if(!req.body.title) {
+            res.status(400).send({error:"Please send title"});
+            return
+        }
+        const category: CategoriesWithoutId = {
+            title: req.body.title,
+            description: req.body.description,
+        };
+        console.log(category);
+         await connection.query(`UPDATE categories SET title = ?, description = ? WHERE id = ?`, [category.title, category.description, id]);
+        const [resultOneCategory]= await connection.query('SELECT * FROM category WHERE id = ?', [id]);
+        const oneCategory = resultOneCategory as Categories[];
+        if (oneCategory.length === 0 ){
+            res.status(400).send({error:"Place not found"})
+        } else {
+            res.send(oneCategory[0]);
+        }
+    }
+    catch (e){
+        next(e);
+    }
+});
 
 export default categoriesRouter;

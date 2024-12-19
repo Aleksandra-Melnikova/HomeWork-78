@@ -1,64 +1,111 @@
 import express from "express";
-import fileDb from "../fileDb";
-import { Places, PlacesWithoutId} from "../types";
+import {Items, Places, PlacesWithoutId} from "../types";
+import mySqlDb from "../mySqlDb";
+import {ResultSetHeader} from "mysql2";
 
 const placesRouter = express.Router();
-const routerName = 'places';
 
-placesRouter.get('/', async (req, res) => {
-    const places = await fileDb.getItems(routerName) as Places[];
-    const result = places.map(place => {
-        return{
-            id: place.id,
-            name:place.title
-        }
-    })
-    res.send(result);
+placesRouter.get('/', async (req, res,next) => {
+    try {
+        const connection = await mySqlDb.getConnection();
+        const [result] = await connection.query('SELECT id, title FROM places');
+        const places = result as Places[];
+        res.send(places);
+    }
+    catch (e){
+        next(e);
+    }
 });
 
-placesRouter.get('/:id', async (req, res) => {
-    const places = await fileDb.getItems(routerName); // [{}, {}, {}, {}]
-    const placeFindById = places.find((place) => place.id === req.params.id);
-    res.send(placeFindById);
+placesRouter.get('/:id', async (req, res,next) => {
+    const id = req.params.id;
+    if (!req.params.id) {
+        res.status(404).send({error:"Not found"});
+    }
+    try {
+        const connection = await mySqlDb.getConnection();
+        const [result]= await connection.query('SELECT * FROM places WHERE id = ?', [id]);
+        const places = result as Places[];
+        if (places.length === 0 ){
+            res.status(400).send({error:"Place not found"})
+        } else {
+            res.send(places[0]);}
+    }
+    catch (e){
+        next(e);
+    }
 });
 
-
-placesRouter.post('/', async (req, res) => {
+placesRouter.post('/', async (req, res,next) => {
     if(!req.body.title) {
-        res.status(400).send({error:"please send title"});
+        res.status(400).send({error:"Please send title"});
         return
     }
     const place: PlacesWithoutId = {
         title: req.body.title,
         description: req.body.description,
     };
-
-    const savedPlaces = await fileDb.addItem(place,routerName);
-    res.send(savedPlaces);
+    try {
+        const connection = await mySqlDb.getConnection();
+        const [result]= await connection.query('INSERT INTO places (title,description) VALUES (?, ?)',
+            [ place.title,place.description]);
+        const resultHeader = result as ResultSetHeader;
+        const [resultOnePlace]= await connection.query('SELECT * FROM places WHERE id = ?', [resultHeader.insertId]);
+        const onePlace = resultOnePlace as Places[];
+        if (onePlace.length === 0 ){
+            res.status(400).send({error:"Place not found"})
+        } else {
+            res.send(onePlace[0]);
+        }
+    }
+    catch (e){
+        next(e);
+    }
 });
-placesRouter.delete('/:id', async (req, res) => {
-    const places = await fileDb.getItems(routerName);//проверить на связанность данных//
-    const placeFindById = places.find((place) => place.id === req.params.id);
-    if(placeFindById) {
-        const placesNew = await fileDb.deleteItem(placeFindById,routerName);
-        res.send(placesNew);}//нужен ли ответ//
+placesRouter.delete('/:id', async (req, res,next) => {
+    const id = req.params.id;
+    if (!req.params.id) {
+        res.status(404).send({error:"Not found"});
+    }
+    try {
+        const connection = await mySqlDb.getConnection();
+        await connection.query('DELETE FROM places WHERE id = ?', [id]);
+        const [result] = await connection.query('SELECT id, title FROM places');
+        const places = result as Items[];
+        res.send(places);
+    }
+    catch (e){
+        next(e);
+    }
 });
 
-// categoriesRouter.put('/:id', async (req, res) => {
-//     const categories = await fileDb.getItems();
-//     const index = categories.findIndex((category) => category.id === req.params.id);
-//     console.log(index);
-//     console.log(req.body.title)
-//         const item:Categories ={
-//             id:categories[index].id,
-//             title:req.body.title,
-//             description:req.body.description,}
-//
-//         console.log(item);
-//         // const categoriesNew = await fileDb.putItem(item,index);
-//         // console.log(categoriesNew);
-//         // res.send(categoriesNew);
-//
-// });
+placesRouter.put('/:id', async (req, res,next) => {
+const id = req.params.id;
+    if (!req.params.id) {
+        res.status(404).send({error:"Not found"});
+    }
+    try {
+        const connection = await mySqlDb.getConnection();
+        if(!req.body.title) {
+            res.status(400).send({error:"Please send title"});
+            return
+        }
+        const place: PlacesWithoutId = {
+            title: req.body.title,
+            description: req.body.description,
+        };
+        await connection.query('UPDATE places SET title = ?, description = ? WHERE id = ?', [place.title, place.description, id]);
+        const [resultOnePlace]= await connection.query('SELECT * FROM places WHERE id = ?', [id]);
+        const onePlace = resultOnePlace as Places[];
+        if (onePlace.length === 0 ){
+            res.status(400).send({error:"Place not found"})
+        } else {
+            res.send(onePlace[0]);
+        }
+    }
+    catch (e){
+        next(e);
+    }
+});
 
 export default placesRouter;

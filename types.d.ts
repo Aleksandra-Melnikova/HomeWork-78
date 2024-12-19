@@ -1,5 +1,5 @@
 export interface Categories{
-    id: string;
+    id: number;
     title: string;
     description: string;
 }
@@ -7,7 +7,7 @@ export interface Categories{
 export type CategoriesWithoutId = Omit<Categories, 'id'>
 
 export interface Places{
-    id: string;
+    id: number;
     title: string;
     description: string;
 }
@@ -15,9 +15,9 @@ export interface Places{
 export type PlacesWithoutId = Omit<Places, 'id'>
 
 export interface Items{
-    id: string;
-    id_category: string;
-    id_place: string;
+    id: number;
+    category_id: number;
+    place_id: number;
     title: string;
     description: string | null;
     image: string | null;
