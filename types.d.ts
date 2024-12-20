@@ -21,7 +21,7 @@ export interface Items{
     title: string;
     description: string | null;
     image: string | null;
-    date: string | null;
+    date: string;
 }
 
-export type ItemWithoutId = Omit<Items, 'id'>
+export type ItemWithoutId = Omit<Items, 'id','date'>

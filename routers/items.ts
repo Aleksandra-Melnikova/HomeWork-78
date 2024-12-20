@@ -51,12 +51,11 @@ itemsRouter.post('/',imagesUpload.single('image'), async (req, res,next) => {
         title: req.body.title,
         description: req.body.description,
         image:req.file ?'images' + req.file.filename : null,
-        date: req.body.date,
     };
     try {
         const connection = await mySqlDb.getConnection();
-        const [result]= await connection.query('INSERT INTO items (category_id, place_id, title,description,image,date) VALUES (?, ?, ?, ?, ?, ?)',
-            [item.category_id, item.place_id, item.title,item.description, item.image, item.date]);
+        const [result]= await connection.query('INSERT INTO items (category_id, place_id, title,description,image) VALUES (?, ?, ?, ?, ?)',
+            [item.category_id, item.place_id, item.title,item.description, item.image]);
         const resultHeader = result as ResultSetHeader;
         const [resultOneItem]= await connection.query('SELECT * FROM items WHERE id = ?', [resultHeader.insertId]);
         const oneItem = resultOneItem as Items[];
@@ -109,10 +108,9 @@ itemsRouter.put('/:id',imagesUpload.single('image'), async (req, res,next) => {
             title: req.body.title,
             description: req.body.description,
             image:req.file ?'images' + req.file.filename : null,
-            date: req.body.date,
         };
         try{
-        await connection.query('UPDATE items SET title = ?,description = ?, category_id=?, place_id = ?, image = ?, date = ? WHERE id = ?', [item.title,item.description,item.category_id, item.place_id, item.image, item.date, id]);
+        await connection.query('UPDATE items SET title = ?,description = ?, category_id=?, place_id = ?, image = ? WHERE id = ?', [item.title,item.description,item.category_id, item.place_id, item.image, id]);
         const [resultOneItem]= await connection.query('SELECT * FROM items WHERE id = ?', [id]);
         const oneItem = resultOneItem as Places[];
         if (oneItem.length === 0 ){
