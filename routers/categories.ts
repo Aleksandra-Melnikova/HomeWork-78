@@ -71,10 +71,14 @@ categoriesRouter.delete('/:id', async (req, res,next) => {
     }
     try {
         const connection = await mySqlDb.getConnection();
-        await connection.query('DELETE FROM categories WHERE id = ?', [id]);
-        const [result] = await connection.query('SELECT id, title FROM categories');
-        const categories = result as Categories[];
-        res.send(categories);
+        const [resultOneCategory]= await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
+        const oneCategory = resultOneCategory as Categories[];
+        if (oneCategory.length === 0 ){
+            res.status(404).send({error:"Not found"});
+        } else{
+            await connection.query('DELETE FROM categories WHERE id = ?', [id]);
+            res.send({message: 'Category deleted successfully.'});
+        }
     }
     catch (e){
         next(e);

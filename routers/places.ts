@@ -1,5 +1,5 @@
 import express from "express";
-import {Items, Places, PlacesWithoutId} from "../types";
+import { Places, PlacesWithoutId} from "../types";
 import mySqlDb from "../mySqlDb";
 import {ResultSetHeader} from "mysql2";
 
@@ -69,10 +69,14 @@ placesRouter.delete('/:id', async (req, res,next) => {
     }
     try {
         const connection = await mySqlDb.getConnection();
-        await connection.query('DELETE FROM places WHERE id = ?', [id]);
-        const [result] = await connection.query('SELECT id, title FROM places');
-        const places = result as Items[];
-        res.send(places);
+        const [resultOnePlace]= await connection.query('SELECT * FROM places WHERE id = ?', [id]);
+        const onePlace = resultOnePlace as Places[];
+        if (onePlace.length === 0 ){
+            res.status(404).send({error:"Not found"});
+        } else{
+            await connection.query('DELETE FROM places WHERE id = ?', [id]);
+            res.send({message: 'Place deleted successfully.'});
+        }
     }
     catch (e){
         next(e);

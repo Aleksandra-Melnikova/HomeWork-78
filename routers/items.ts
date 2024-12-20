@@ -78,10 +78,14 @@ itemsRouter.delete('/:id', async (req, res,next) => {
     }
     try {
         const connection = await mySqlDb.getConnection();
-        await connection.query('DELETE FROM items WHERE id = ?', [id]);
-        const [result] = await connection.query('SELECT id, title FROM items');
-        const items = result as Items[];
-        res.send(items);
+        const [resultOneItems]= await connection.query('SELECT * FROM items WHERE id = ?', [id]);
+        const OneItems =resultOneItems as Items[];
+        if (OneItems .length === 0 ){
+            res.status(404).send({error:"Not found"});
+        } else{
+            await connection.query('DELETE FROM items WHERE id = ?', [id]);
+            res.send({message: 'Items deleted successfully.'});
+        }
     }
     catch (e){
         next(e);
