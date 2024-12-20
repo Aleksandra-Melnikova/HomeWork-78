@@ -89,7 +89,7 @@ itemsRouter.delete('/:id', async (req, res,next) => {
 
 });
 
-itemsRouter.put('/:id', async (req, res,next) => {
+itemsRouter.put('/:id',imagesUpload.single('image'), async (req, res,next) => {
     const id = req.params.id;
     if (!req.params.id) {
         res.status(404).send({error:"Not found"});

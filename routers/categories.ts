@@ -53,7 +53,6 @@ categoriesRouter.post('/', async (req, res,next) => {
         const resultHeader = result as ResultSetHeader;
         const [resultOneCategory]= await connection.query('SELECT * FROM categories WHERE id = ?', [resultHeader.insertId]);
         const oneCategory = resultOneCategory as Categories[];
-        console.log(oneCategory);
         if (oneCategory.length === 0 ){
             res.status(400).send({error:"Category not found"});
         } else {
@@ -97,9 +96,8 @@ categoriesRouter.put('/:id', async (req, res,next) => {
             title: req.body.title,
             description: req.body.description,
         };
-        console.log(category);
          await connection.query(`UPDATE categories SET title = ?, description = ? WHERE id = ?`, [category.title, category.description, id]);
-        const [resultOneCategory]= await connection.query('SELECT * FROM category WHERE id = ?', [id]);
+        const [resultOneCategory]= await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
         const oneCategory = resultOneCategory as Categories[];
         if (oneCategory.length === 0 ){
             res.status(400).send({error:"Place not found"})
